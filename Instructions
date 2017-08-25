@@ -1,0 +1,54 @@
+PHP
+Пускаме си MySQL
+След това Heidi
+Отваряне на cmd в php проекта
+команда php composer.phar install
+Отваряне на cmd в php проекта
+команда php bin/console doctrine:database:create
+Проверяваме TODOs
+Писане на команда -> Run Command -> php bin/console doctrine:generate:entity
+Писане на Папката Bundle две точки името на задачата
+enter, попълване на полета (без id), enter
+Промяна Entity/Task името на таблицата да е в множествено число
+Изтриваме папка Form
+команда php bin/console doctrine:generate:form Папката Bundle две точки името на задачата
+махаме GetBlockPrefix
+Попълваме Form
+Попълваме Entity
+Попълваме Controller index след index
+команда php bin/console doctrine:schema:update + --force
+
+отваряне на проекта
+Попълваме Entity
+команда php bin/console doctrine:database:create
+команда php bin/console doctrine:schema:update + --force
+Попълваме Controller
+
+отваряне на проекта
+Писане на команда -> Run Command -> php bin/console doctrine:generate:entity
+Писане на Папката Bundle две точки името на задачата
+enter, попълване на полета (без id), enter
+Попълваме Form
+Попълваме Controller
+ 
+JS
+Пускаме mongod
+След това RoboMongo
+команда npm install в папката
+Проверяваме TODOs
+Попълваме Entity
+Попълваме Controller
+
+Java
+Пускаме си MySQL
+След това Heidi
+Проверяваме TODOs
+Попълваме BindingModel
+Попълваме Entity
+Попълваме Controllers
+
+C#
+Отваряне на MSSQL
+Попълваме Entity
+Попълваме Controller
+Ако трябва msconfig спиране на защитните стени
