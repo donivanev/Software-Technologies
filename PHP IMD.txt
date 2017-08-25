@@ -1,0 +1,298 @@
+<?php
+
+namespace AppBundle\Form;
+
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
+class FilmType extends AbstractType
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function buildForm(FormBuilderInterface $builder, array $options)
+    {
+        $builder
+            ->add('name', TextType::class)
+            ->add('genre', TextType::class)
+            ->add('director', TextType::class)
+            ->add('year', TextType::class);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function configureOptions(OptionsResolver $resolver)
+    {
+        $resolver->setDefaults(array(
+            'data_class' => 'AppBundle\Entity\Film'
+        ));
+    }
+}
+
+
+___________________________________________________________
+
+<?php
+
+namespace AppBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * Film
+ *
+ * @ORM\Table(name="films")
+ * @ORM\Entity(repositoryClass="AppBundle\Repository\FilmRepository")
+ */
+class Film
+{
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    private $id;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="name", type="string", length=255)
+     */
+    private $name;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="genre", type="string", length=255)
+     */
+    private $genre;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="director", type="string", length=255)
+     */
+    private $director;
+
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="year", type="integer")
+     */
+    private $year;
+
+
+    /**
+     * Get id
+     *
+     * @return int
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * Set name
+     *
+     * @param string $name
+     *
+     * @return Film
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    /**
+     * Get name
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * Set genre
+     *
+     * @param string $genre
+     *
+     * @return Film
+     */
+    public function setGenre($genre)
+    {
+        $this->genre = $genre;
+
+        return $this;
+    }
+
+    /**
+     * Get genre
+     *
+     * @return string
+     */
+    public function getGenre()
+    {
+        return $this->genre;
+    }
+
+    /**
+     * Set director
+     *
+     * @param string $director
+     *
+     * @return Film
+     */
+    public function setDirector($director)
+    {
+        $this->director = $director;
+
+        return $this;
+    }
+
+    /**
+     * Get director
+     *
+     * @return string
+     */
+    public function getDirector()
+    {
+        return $this->director;
+    }
+
+    /**
+     * Set year
+     *
+     * @param integer $year
+     *
+     * @return Film
+     */
+    public function setYear($year)
+    {
+        $this->year = $year;
+
+        return $this;
+    }
+
+    /**
+     * Get year
+     *
+     * @return int
+     */
+    public function getYear()
+    {
+        return $this->year;
+    }
+}
+
+___________________________________________________________
+
+<?php
+
+namespace AppBundle\Controller;
+
+use AppBundle\Entity\Film;
+use AppBundle\Form\FilmType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Request;
+
+class FilmController extends Controller
+{
+    /**
+     * @param Request $request
+     * @Route("/", name="index")
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function index(Request $request)
+    {
+        $films = $this->getDoctrine()->getRepository(Film::class)->findAll();
+
+        return $this->render('film/index.html.twig', ['films' => $films]);
+    }
+
+    /**
+     * @param Request $request
+     * @Route("/create", name="create")
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function create(Request $request)
+    {
+        $film = new Film();
+
+        $form = $this->createForm(FilmType::class, $film);
+
+        $form->handleRequest($request);
+
+        if($form->isSubmitted() && $form->isValid()){
+            $em = $this->getDoctrine()->getManager();
+            $em->persist($film);
+            $em->flush();
+
+            return $this->redirectToRoute('index');
+        }
+
+        return $this->render('film/create.html.twig', array('form' => $form->createView()));
+	}
+
+    /**
+     * @Route("/edit/{id}", name="edit")
+     *
+     * @param $id
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function edit($id, Request $request)
+    {
+        $film = $this->getDoctrine()->getRepository(Film::class)->find($id);
+
+        $form = $this->createForm(FilmType::class, $film);
+
+        $form->handleRequest($request);
+
+        if($form->isSubmitted() && $form->isValid()){
+            $em = $this->getDoctrine()->getManager();
+            $em->merge($film);
+            $em->flush();
+
+            return $this->redirectToRoute('index');
+        }
+
+        return $this->render('film/edit.html.twig', array('film' => $film, 'form' => $form->createView()));
+    }
+
+    /**
+     * @Route("/delete/{id}", name="delete")
+     *
+     * @param $id
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function delete($id, Request $request)
+    {
+        $film = $this->getDoctrine()->getRepository(Film::class)->find($id);
+
+        $form = $this->createForm(FilmType::class, $film);
+
+        $form->handleRequest($request);
+
+        if($form->isSubmitted() && $form->isValid()){
+            $em = $this->getDoctrine()->getManager();
+            $em->remove($film);
+            $em->flush();
+
+            return $this->redirectToRoute('index');
+        }
+
+        return $this->render('film/delete.html.twig', array('film' => $film, 'form' => $form->createView()));
+    }
+}

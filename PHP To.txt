@@ -1,0 +1,219 @@
+<?php
+
+namespace AppBundle\Form;
+
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
+class TaskType extends AbstractType
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function buildForm(FormBuilderInterface $builder, array $options)
+    {
+        $builder->add('title', TextType::class)
+                ->add('comments', TextType::class);
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function configureOptions(OptionsResolver $resolver)
+    {
+        $resolver->setDefaults(array(
+            'data_class' => 'AppBundle\Entity\Task'
+        ));
+    }
+
+}
+
+____________________________________________________
+
+<?php
+
+namespace AppBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+/**
+ * Task
+ *
+ * @ORM\Table(name="tasks")
+ * @ORM\Entity(repositoryClass="AppBundle\Repository\TaskRepository")
+ */
+class Task
+{
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    private $id;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="title", type="string", length=255)
+     */
+    private $title;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="comments", type="string", length=255)
+     */
+    private $comments;
+
+
+    /**
+     * Get id
+     *
+     * @return int
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * Set title
+     *
+     * @param string $title
+     *
+     * @return Task
+     */
+    public function setTitle($title)
+    {
+        $this->title = $title;
+
+        return $this;
+    }
+
+    /**
+     * Get title
+     *
+     * @return string
+     */
+    public function getTitle()
+    {
+        return $this->title;
+    }
+
+    /**
+     * Set comments
+     *
+     * @param string $comments
+     *
+     * @return Task
+     */
+    public function setComments($comments)
+    {
+        $this->comments = $comments;
+
+        return $this;
+    }
+
+    /**
+     * Get comments
+     *
+     * @return string
+     */
+    public function getComments()
+    {
+        return $this->comments;
+    }
+}
+
+____________________________________________________
+
+<?php
+
+namespace AppBundle\Controller;
+
+use AppBundle\Entity\Task;
+use AppBundle\Form\TaskType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Request;
+
+class TaskController extends Controller
+{
+    /**
+     * @param Request $request
+     * @Route("/", name="index")
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function index(Request $request)
+    {
+        $taskRepo = $this->getDoctrine()->getRepository(Task::class);
+
+        $tasks = $taskRepo->findAll();
+
+        return $this->render('task/index.html.twig', ['tasks' => $tasks]);
+    }
+
+    /**
+     * @param Request $request
+     * @Route("/create", name="create")
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function create(Request $request)
+    {
+        $task = new Task();
+        $form = $this->createForm(TaskType::class, $task);
+
+        $form->handleRequest($request);
+
+        if($form->isSubmitted() && $form->isValid()){
+            if($task->getTitle() == null || $task->getComments() == null){
+                return $this->redirectToRoute('create');
+            }
+            $em = $this->getDoctrine()->getManager();
+
+            $em->persist($task);
+            $em->flush();
+
+            return $this->redirectToRoute('index');
+        }
+
+        return $this->render('task/create.html.twig', ['form' => $form->createView()]);
+    }
+
+    /**
+     * @Route("/delete/{id}", name="delete")
+     *
+     * @param $id
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function delete($id, Request $request)
+    {
+        $taskRepo = $this->getDoctrine()->getRepository(Task::class);
+
+        $task = $taskRepo->find($id);
+
+        if($task == null){
+            return $this->redirectToRoute('index');
+        }
+
+        $form = $this->createForm(TaskType::class, $task);
+
+        $form->handleRequest($request);
+
+        if($form->isSubmitted() && $form->isValid()){
+            $em = $this->getDoctrine()->getManager();
+
+            $em->remove($task);
+            $em->flush();
+
+            return $this->redirectToRoute('index');
+        }
+
+        return $this->render('task/delete.html.twig', ['task' => $task, 'form' => $form->createView()]);
+    }
+}

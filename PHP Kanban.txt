@@ -1,0 +1,215 @@
+<?php
+
+namespace AppBundle\Form;
+
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\RadioType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
+class TaskType extends AbstractType
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function buildForm(FormBuilderInterface $builder, array $options)
+    {
+        $builder
+            ->add('title', TextType::class)
+            ->add('status', ChoiceType::class, [
+                'choices' => ['Open' => 'Open', 'In Progress' => 'In Progress', 'Finished' => 'Finished'],
+                'multiple' => false,
+                'expanded' => true,
+            ]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function configureOptions(OptionsResolver $resolver)
+    {
+        $resolver->setDefaults(array(
+            'data_class' => 'AppBundle\Entity\Task'
+        ));
+    }
+}
+
+___________________________________________________________
+
+<?php
+
+namespace AppBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints\NotBlank;
+
+/**
+ * Task
+ *
+ * @ORM\Table(name="tasks")
+ * @ORM\Entity(repositoryClass="AppBundle\Repository\TaskRepository")
+ */
+class Task
+{
+    /**
+     * @var int
+     *
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     * @ORM\Column(type="integer")
+     */
+    private $id;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(type="string", length=255)
+     * @NotBlank
+     */
+    private $title;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(type="string", length=255)
+     * @NotBlank
+     */
+    private $status;
+
+    /**
+     * @return int
+     */
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    /**
+     * @param int $id
+     */
+    public function setId(int $id)
+    {
+        $this->id = $id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTitle(): ?string
+    {
+        return $this->title;
+    }
+
+    /**
+     * @param string $title
+     */
+    public function setTitle(string $title)
+    {
+        $this->title = $title;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getStatus()
+    {
+        return $this->status;
+    }
+
+    /**
+     * @param mixed $status
+     */
+    public function setStatus($status)
+    {
+        $this->status = $status;
+    }
+
+}
+
+___________________________________________________________
+
+<?php
+
+namespace AppBundle\Controller;
+
+use AppBundle\Entity\Task;
+use AppBundle\Form\TaskType;
+use Doctrine\DBAL\Types\TextType;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Request;
+
+class TaskController extends Controller
+{
+    /**
+     * @param Request $request
+     * @Route("/", name="index")
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function index(Request $request)
+    {
+        $repo = $this->getDoctrine()->getRepository(Task::class);
+        $tasksOpen = $repo->findBy(["status" => "Open"]);
+        $tasksInProgress = $repo->findBy(["status" => "In Progress"]);
+        $tasksFinished = $repo->findBy(["status" => "Finished"]);
+        return $this->render(
+            ":task:index.html.twig",
+            ['openTasks' => $tasksOpen,
+                'inProgressTasks' => $tasksInProgress,
+                'finishedTasks' => $tasksFinished
+            ]
+        );
+    }
+
+    /**
+     * @param Request $request
+     * @Route("/create", name="create")
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function create(Request $request)
+    {
+        $task = new Task();
+        $form = $this->createForm(TaskType::class, $task);
+        $form->handleRequest($request);
+        if($form->isSubmitted() && $form->isValid()){
+            $em = $this->getDoctrine()->getManager();
+            $em->persist($task);
+            $em->flush();
+            return $this->redirect("/");
+        }
+        return $this->render(
+            ":task:create.html.twig",
+            ["task" => $task, "form" => $form->createView()]
+        );
+    }
+
+    /**
+     * @Route("/edit/{id}", name="edit")
+     *
+     * @param $id
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    public function edit($id, Request $request)
+    {
+       $repo = $this->getDoctrine()->getRepository(Task::class);
+       $task = $repo->find($id);
+       if($task == null){
+           return $this->redirect("/");
+       }
+       $form = $this->createForm(TaskType::class, $task);
+       $form->handleRequest($request);
+       if($form->isSubmitted() && $form->isValid()){
+           $em = $this->getDoctrine()->getManager();
+           $em->merge($task);
+           $em->flush();
+           return $this->redirect("/");
+       }
+        return $this->render(
+            ":task:edit.html.twig",
+            ["task" => $task, "form" => $form->createView()]
+        );
+    }
+}

@@ -1,0 +1,245 @@
+package imdb.bindingModel;
+
+public class FilmBindingModel {
+	private String name;
+
+	private String genre;
+
+	private String director;
+
+	private int year;
+
+    public FilmBindingModel() {
+
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getGenre() {
+        return this.genre;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
+    }
+
+    public String getDirector() {
+        return this.director;
+    }
+
+    public void setDirector(String director) {
+        this.director = director;
+    }
+
+    public int getYear() {
+        return this.year;
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+    }
+}
+
+______________________________________________________________
+
+package imdb.entity;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "films")
+public class Film {
+
+    private int id;
+
+    private String name;
+
+    private String genre;
+
+    private String director;
+
+    private int year;
+
+    public Film(){
+
+    }
+
+    public Film(String name, String genre, String director, int year) {
+        this.name = name;
+        this.genre = genre;
+        this.director = director;
+        this.year = year;
+    }
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public int getId() {
+        return this.id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    @Column(nullable = false)
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Column(nullable = false)
+    public String getGenre() {
+        return this.genre;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
+    }
+
+    @Column(nullable = false)
+    public String getDirector() {
+        return this.director;
+    }
+
+    public void setDirector(String director) {
+        this.director = director;
+    }
+
+    @Column(nullable = false)
+    public int getYear() {
+        return this.    year;
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+    }
+}
+
+
+_______________________________________________________________
+
+package imdb.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import imdb.bindingModel.FilmBindingModel;
+import imdb.entity.Film;
+import imdb.repository.FilmRepository;
+
+import java.util.List;
+
+@Controller
+public class FilmController {
+
+	private final FilmRepository filmRepository;
+
+	@Autowired
+	public FilmController(FilmRepository filmRepository) {
+		this.filmRepository = filmRepository;
+	}
+
+	@GetMapping("/")
+	public String index(Model model) {
+		List<Film> films = this.filmRepository.findAll();
+
+		model.addAttribute("view", "film/index");
+		model.addAttribute("films", films);
+
+		return "base-layout";
+	}
+
+	@GetMapping("/create")
+	public String create(Model model) {
+
+		model.addAttribute("view", "film/create");
+
+		return "base-layout";
+	}
+
+	@PostMapping("/create")
+	public String createProcess(Model model, FilmBindingModel filmBindingModel) {
+		Film filmEntity = new Film(
+				filmBindingModel.getName(),
+				filmBindingModel.getGenre(),
+				filmBindingModel.getDirector(),
+				filmBindingModel.getYear()
+		);
+
+		this.filmRepository.saveAndFlush(filmEntity);
+
+		return "redirect:/";
+	}
+
+	@GetMapping("/edit/{id}")
+	public String edit(Model model, @PathVariable int id) {
+		Film filmEntity = this.filmRepository.findOne(id);
+
+		if(filmEntity == null){
+			return "redirect:/";
+		}
+
+		model.addAttribute("view", "film/edit");
+		model.addAttribute("film", filmEntity);
+
+		return "base-layout";
+	}
+
+	@PostMapping("/edit/{id}")
+	public String editProcess(Model model, @PathVariable int id, FilmBindingModel filmBindingModel) {
+
+		Film filmEntity = this.filmRepository.findOne(id);
+
+		if(filmEntity == null){
+			return "redirect:/";
+		}
+
+		filmEntity.setName(filmBindingModel.getName());
+		filmEntity.setGenre(filmBindingModel.getGenre());
+		filmEntity.setDirector(filmBindingModel.getDirector());
+		filmEntity.setYear(filmBindingModel.getYear());
+
+		this.filmRepository.saveAndFlush(filmEntity);
+
+		return "redirect:/";
+	}
+
+	@GetMapping("/delete/{id}")
+	public String delete(Model model, @PathVariable int id) {
+		Film filmEntity = this.filmRepository.findOne(id);
+
+		if(filmEntity == null){
+			return "redirect:/";
+		}
+
+		model.addAttribute("view", "film/delete");
+		model.addAttribute("film", filmEntity);
+
+		return "base-layout";
+	}
+
+	@PostMapping("/delete/{id}")
+	public String deleteProcess(@PathVariable int id) {
+		Film filmEntity = this.filmRepository.findOne(id);
+
+		if(filmEntity == null){
+			return "redirect:/";
+		}
+
+		this.filmRepository.delete(filmEntity);
+
+		return "redirect:/";
+	}
+}
